@@ -1,7 +1,7 @@
 import argparse
-import agent
-import environment
-import runner
+import agent_multi_action
+import environment_multi_action
+import runner_multi_action
 import timeit as ti
 
 parser = argparse.ArgumentParser(description='RL running machine')
