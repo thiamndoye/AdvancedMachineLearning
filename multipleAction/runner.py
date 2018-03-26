@@ -3,15 +3,18 @@ This is the machinnery that runs your agent in an environment.
 
 This is not intented to be modified during the practical.
 """
-
+import numpy as np
 class Runner:
     def __init__(self, environment, agent, verbose=False):
         self.environment = environment
-        self.agent = agent#(self.environment.num_cases,self.environment.gridsize)
+        self.agent = agent
         self.verbose = verbose
 
         self.gameFinished=0
         self.gameLost=0
+        self.maxIterReached=0
+
+        self.averageStepsPerGame=[]
 
 
     def step(self):
@@ -23,12 +26,20 @@ class Runner:
 
     def loop(self, games, max_iter):
         cumul_reward = 0.0
+
         for g in range(1, games+1):
-            if g == 901:
+            numStepBeforeBoom=0
+            if g == 9500:
                 cumul_reward = 0.0
+                self.gameFinished=0
+                self.gameLost=0
+                self.maxIterReached=0
+                self.averageStepsPerGame=[]
+
             self.agent.reset()
             self.environment.reset()
             for i in range(1, max_iter+1):
+                numStepBeforeBoom+=1
                 if self.verbose:
                     print("Simulation step {}:".format(i))
                     self.environment.display()
@@ -49,13 +60,17 @@ class Runner:
                     print()
                 if stop is not None:
                     break
+                if i==max_iter:
+                    self.maxIterReached+=1
             if self.verbose:
                 print(" <=> Finished game number: {} <=>".format(g))
                 print()
-        if self.verbose:
-            print("Total number of game win: ", str(self.gameFinished))
-            print("Total number of game lost: ", str(self.gameLost))
-
+            self.averageStepsPerGame.append(numStepBeforeBoom)
+        #if self.verbose:
+        print("Total number of game win: ", str(self.gameFinished))
+        print("Total number of game lost: ", str(self.gameLost))
+        print("Total number of game where max_iter reached : ", str(self.maxIterReached))
+        print("Average step before explosion : ", str(np.mean(self.averageStepsPerGame)))
         return cumul_reward
 
 def iter_or_loopcall(o, count):
@@ -83,11 +98,14 @@ class BatchRunner:
 
     def game(self, max_iter):
         rewards = []
+        avsteps=[]
         for (agent, env) in zip(self.agents, self.environments):
             agent.reset()
             env.reset()
             game_reward = 0
+            stepBD=0
             for i in range(1, max_iter+1):
+                stepBD+=1
                 observation = env.observe()
                 action = agent.act(observation)
                 (reward, stop) = env.act(action)
@@ -96,17 +114,22 @@ class BatchRunner:
                 if stop is not None:
                     break
             rewards.append(game_reward)
-        return sum(rewards)/len(rewards)
+            avsteps.append(stepBD)
+        return sum(rewards)/len(rewards),sum(avsteps)/len(avsteps)
 
     def loop(self, games, max_iter):
         cum_avg_reward = 0.0
+        averageStepsPerGameList=[]
         for g in range(1, games+1):
             if g == 901 :
                 cum_avg_reward = 0.0
-            avg_reward = self.game(max_iter)
+                averageStepsPerGameList=[]
+            avg_reward,averageStepsPerGame = self.game(max_iter)
             cum_avg_reward += avg_reward
+            averageStepsPerGameList.append(averageStepsPerGame)
             if self.verbose:
                 print("Simulation game {}:".format(g))
                 print(" ->            average reward: {}".format(avg_reward))
                 print(" -> cumulative average reward: {}".format(cum_avg_reward))
+                print(" -> average step before explosion: {}".format(sum(averageStepsPerGameList)/len(averageStepsPerGameList)))
         return cum_avg_reward

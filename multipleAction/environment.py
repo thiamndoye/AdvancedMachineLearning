@@ -16,7 +16,7 @@ class Environment:
     # List of the possible actions by the agents
     possible_actions = []
 
-    def __init__(self, gridsize=(3, 3), num_mines=2):
+    def __init__(self, gridsize=(4, 4), num_mines=4):
         """Instanciate a new environement without placing the mines.
         """
         self.gridsize = gridsize
@@ -24,9 +24,10 @@ class Environment:
         self.num_mines = num_mines
         self.discovered_cases = 0
         self.gameFinishedCount=0
+        self.flagged=0
         self.reset()
 
-        self.flagged=0
+        
 
 
     def reset(self):
@@ -106,50 +107,29 @@ class Environment:
         and returns a reward.
         """
         if self.discovered_cases == 0:
-            if len(action)!=2:
-                action=(action[0],action[1])
-
             self.mines_placing(action)
             self.grid_valuation()
             self.discovered_cases+=1
             return (0,None)
         prev_discovered = self.discovered_cases
 
-        if len(action)==2:
-            if action in self.mines_pos:
-                return (-10.0, "Boom")
-            elif self.screen[action] != "X":
-                return(-1.0, None)
-            else:
-                self.screen[action] = self.value[action]
-                if self.value[action] == 0:
-                    self.discover(action)
-                self.discovered_cases = self.num_cases - sum(1 for x in self.screen.values() if (x == "X" or x=="F"))
-                score = self.discovered_cases - prev_discovered
-                if self.discovered_cases == self.num_cases - self.num_mines:
-                    event = "End game"
-                    self.gameFinishedCount+=1
-                else:
-                    event = None
-                return(score, event)
+        if action in self.mines_pos:
+            return (-10.0, "Boom")
+        elif self.screen[action] != "X":
+            return(-1.0, None)
         else:
-            pos=(action[0],action[1])
-            if action[2]=="F":
-                self.flagged+=1
-                self.screen[pos]="F"
-                if self.flagged>self.num_mines:
-                    return(-2.0,None)
-                elif pos in self.mines_pos :
-                    return(2.0,None)
-                else:
-                    return(0.0,None)
-            elif action[2]=="UF":
-                if self.screen[pos]=="F":
-                    self.screen[pos]="X"
-                    return(0.0,None)
-                else:
-                    return (-1.0,None)
-
+            self.screen[action] = self.value[action]
+            if self.value[action] == 0:
+                self.discover(action)
+            self.discovered_cases = self.num_cases - sum(1 for x in self.screen.values() if x == "X")
+            score = self.discovered_cases - prev_discovered
+            if self.discovered_cases == self.num_cases - self.num_mines:
+                event = "End game"
+                self.gameFinishedCount+=1
+            else:
+                event = None
+            return(score, event)
+        
 
     def display(self):
         """ Screening the grid for the verbose"""
