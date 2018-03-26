@@ -219,7 +219,7 @@ class QAgentConvoNetwork:
             self.model.fit(train,targets,epochs=self.epochs, batch_size=self.batch_size)
 
             #remove the part we wish to forget in the experience replay
-            start=int(self.batch_size*self.forgetRate)
+            start=int(self.MemorySize*self.forgetRate)
             self.ExperienceReplay=self.ExperienceReplay[start:]
 
 
